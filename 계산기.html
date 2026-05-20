@@ -1,0 +1,816 @@
+```html
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CASIO Classwiz Style Scientific Calculator</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Font Awesome Icons for premium look -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Math.js for robust engineering calculations -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/mathjs/11.8.0/math.js"></script>
+    <!-- Google Fonts for authentic LCD and Sans-serif style -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Orbitron:wght@400;700&family=Noto+Sans+KR:wght@300;400;700&display=swap" rel="stylesheet">
+
+    <style>
+        body {
+            font-family: 'Noto Sans KR', sans-serif;
+            background: radial-gradient(circle, #2c3e50 0%, #0f172a 100%);
+        }
+        /* Authentic LCD Screen Styles */
+        .lcd-screen {
+            font-family: 'Share Tech Mono', monospace;
+            background-color: #a3b899;
+            box-shadow: inset 0px 4px 10px rgba(0,0,0,0.5), inset 0px -2px 5px rgba(255,255,255,0.2);
+            text-shadow: 1px 1px 0px rgba(0, 0, 0, 0.15);
+            transition: background-color 0.3s ease, box-shadow 0.3s ease;
+        }
+        .lcd-screen.backlight-on {
+            background-color: #c2ffd4;
+            box-shadow: inset 0px 4px 10px rgba(0,0,0,0.4), 0 0 15px rgba(100,255,150,0.4);
+        }
+        /* Buttons tactile effect */
+        .calc-btn {
+            position: relative;
+            transition: all 0.05s ease;
+            user-select: none;
+        }
+        .calc-btn:active {
+            transform: translateY(2px);
+            box-shadow: inset 0px 1px 3px rgba(0,0,0,0.8), 0px 1px 1px rgba(255,255,255,0.1) !important;
+        }
+        /* Outer shell and carbon fiber textures */
+        .calculator-body {
+            background: linear-gradient(145deg, #2b2e33 0%, #151618 100%);
+            box-shadow: 0px 25px 50px -12px rgba(0, 0, 0, 0.8), 
+                        inset 0px 2px 3px rgba(255, 255, 255, 0.1),
+                        inset 0px -3px 8px rgba(0, 0, 0, 0.8);
+            border: 1px solid #3a3d42;
+        }
+        /* Golden/Yellow legends above keys for SHIFT functions */
+        .legend-shift {
+            color: #d97706; /* amber-600 */
+            font-size: 0.65rem;
+            font-weight: 700;
+        }
+        /* Red/Purple legends for ALPHA functions */
+        .legend-alpha {
+            color: #db2777; /* pink-600 */
+            font-size: 0.65rem;
+            font-weight: 700;
+        }
+        /* Custom scrollbar for history panel */
+        ::-webkit-scrollbar {
+            width: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: rgba(0, 0, 0, 0.1);
+        }
+        ::-webkit-scrollbar-thumb {
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 3px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: rgba(255, 255, 255, 0.4);
+        }
+        /* D-Pad structure */
+        .dpad-center {
+            background: radial-gradient(circle, #444a54 0%, #202326 100%);
+            box-shadow: 0px 4px 8px rgba(0,0,0,0.4);
+        }
+    </style>
+</head>
+<body class="min-h-screen flex items-center justify-center p-4 overflow-x-hidden">
+
+    <div class="w-full max-w-lg flex flex-col md:flex-row gap-6 items-stretch justify-center">
+        
+        <!-- MAIN CALCULATOR UNIT -->
+        <div class="calculator-body w-full max-w-[420px] mx-auto rounded-[40px] p-6 flex flex-col justify-between relative border border-gray-700 select-none">
+            
+            <!-- CASIO & CLASSWIZ Brand Labeling -->
+            <div class="flex justify-between items-center mb-4 px-2">
+                <div class="flex flex-col">
+                    <span class="text-white font-bold tracking-widest text-lg font-sans">CASIO</span>
+                    <span class="text-gray-400 text-[10px] tracking-wider -mt-1">fx-570CW CLASSWIZ</span>
+                </div>
+                <div class="text-right flex flex-col items-end">
+                    <span class="text-[#e2c175] font-semibold text-[10px] tracking-wider uppercase">Natural Textbook Display</span>
+                    <div class="flex gap-1 mt-1">
+                        <!-- Tiny solar cells visual element -->
+                        <div class="w-3 h-2 bg-amber-950 opacity-80 rounded-xs border border-amber-900"></div>
+                        <div class="w-3 h-2 bg-amber-950 opacity-80 rounded-xs border border-amber-900"></div>
+                        <div class="w-3 h-2 bg-amber-950 opacity-80 rounded-xs border border-amber-900"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- LCD SCREEN CONTAINER -->
+            <div class="relative w-full mb-6">
+                <div id="lcdScreen" class="lcd-screen rounded-lg p-3 text-slate-900 flex flex-col h-32 relative overflow-hidden transition-all duration-300">
+                    
+                    <!-- LCD Top Status indicators bar -->
+                    <div class="flex justify-between items-center text-[10px] font-bold border-b border-black/10 pb-1 mb-1 opacity-80 tracking-widest">
+                        <div class="flex gap-2">
+                            <span id="indicatorShift" class="transition-opacity duration-150 opacity-10 bg-slate-900 text-white px-0.5 rounded">S</span>
+                            <span id="indicatorAlpha" class="transition-opacity duration-150 opacity-10 bg-slate-900 text-white px-0.5 rounded">A</span>
+                            <span id="indicatorM" class="transition-opacity duration-150 opacity-10">M</span>
+                        </div>
+                        <div class="flex gap-2">
+                            <span id="indicatorAngle" class="bg-transparent px-0.5 border border-slate-900 rounded-xs">DEG</span>
+                            <span id="indicatorSci">DEC</span>
+                        </div>
+                    </div>
+                    
+                    <!-- LCD Main Display Area -->
+                    <div class="flex-1 flex flex-col justify-between">
+                        <!-- Input Line (Supports custom display format) -->
+                        <div class="w-full text-left text-lg md:text-xl font-medium tracking-wide truncate pr-1 flex items-center justify-between">
+                            <span id="lcdInput" class="whitespace-pre">0</span>
+                            <span id="cursor" class="animate-pulse font-bold text-slate-800 -ml-1 text-xl">|</span>
+                        </div>
+                        
+                        <!-- Result Line -->
+                        <div id="lcdOutput" class="w-full text-right text-2xl md:text-3xl font-bold tracking-normal truncate">
+                            0
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Backlight & Audio Feedback quick toggles right under screen -->
+                <div class="flex justify-between mt-1.5 px-1 text-xs text-gray-400">
+                    <button onclick="toggleBacklight()" class="hover:text-white transition flex items-center gap-1">
+                        <i class="fa-solid fa-lightbulb text-[10px]"></i> 백라이트
+                    </button>
+                    <button onclick="toggleSound()" class="hover:text-white transition flex items-center gap-1">
+                        <i id="soundIcon" class="fa-solid fa-volume-high text-[10px]"></i> 효과음
+                    </button>
+                    <button onclick="clearHistory()" class="hover:text-red-400 transition flex items-center gap-1">
+                        <i class="fa-solid fa-trash text-[10px]"></i> 기록 초기화
+                    </button>
+                </div>
+            </div>
+
+            <!-- KEYPAD AREA -->
+            <div class="flex flex-col gap-3">
+                
+                <!-- ROW 1: System Keys (SHIFT, ALPHA, D-PAD, MENU, ON) -->
+                <div class="grid grid-cols-5 gap-2 items-center">
+                    <!-- SHIFT Key -->
+                    <div class="flex flex-col items-center">
+                        <span class="legend-shift">SHIFT</span>
+                        <button onclick="pressKey('SHIFT')" id="btnShift" class="calc-btn w-12 h-8 bg-amber-600/90 text-white rounded-md text-[11px] font-bold shadow-[0_3px_0_#92400e,0_4px_6px_rgba(0,0,0,0.4)] border-t border-amber-500/50 hover:bg-amber-500">SHIFT</button>
+                    </div>
+
+                    <!-- ALPHA Key -->
+                    <div class="flex flex-col items-center">
+                        <span class="legend-alpha">ALPHA</span>
+                        <button onclick="pressKey('ALPHA')" id="btnAlpha" class="calc-btn w-12 h-8 bg-pink-700/90 text-white rounded-md text-[11px] font-bold shadow-[0_3px_0_#9d174d,0_4px_6px_rgba(0,0,0,0.4)] border-t border-pink-500/50 hover:bg-pink-600">ALPHA</button>
+                    </div>
+
+                    <!-- CIRCULAR NAVIGATION D-PAD (Takes space of 1 col but we expand with absolute/relative center panel overlay) -->
+                    <div class="col-span-1 flex justify-center items-center">
+                        <div class="relative w-14 h-14 rounded-full dpad-center border border-gray-600 flex items-center justify-center shadow-[0_4px_6px_rgba(0,0,0,0.5)]">
+                            <button onclick="moveCursor('LEFT')" class="absolute left-1 w-4 h-6 text-gray-400 hover:text-white text-xs flex items-center justify-center active:scale-90"><i class="fa-solid fa-caret-left"></i></button>
+                            <button onclick="moveCursor('RIGHT')" class="absolute right-1 w-4 h-6 text-gray-400 hover:text-white text-xs flex items-center justify-center active:scale-90"><i class="fa-solid fa-caret-right"></i></button>
+                            <button onclick="pressKey('UP')" class="absolute top-1 w-6 h-4 text-gray-400 hover:text-white text-xs flex items-center justify-center active:scale-90"><i class="fa-solid fa-caret-up"></i></button>
+                            <button onclick="pressKey('DOWN')" class="absolute bottom-1 w-6 h-4 text-gray-400 hover:text-white text-xs flex items-center justify-center active:scale-90"><i class="fa-solid fa-caret-down"></i></button>
+                            <div class="w-5 h-5 bg-zinc-800 rounded-full border border-zinc-700"></div>
+                        </div>
+                    </div>
+
+                    <!-- MENU/SET UP Key -->
+                    <div class="flex flex-col items-center">
+                        <span class="legend-shift">SET UP</span>
+                        <button onclick="pressKey('MENU')" class="calc-btn w-12 h-8 bg-zinc-700 text-gray-200 rounded-md text-[11px] font-bold shadow-[0_3px_0_#3f3f46,0_4px_6px_rgba(0,0,0,0.4)] border-t border-zinc-500/30 hover:bg-zinc-600">MENU</button>
+                    </div>
+
+                    <!-- ON Key -->
+                    <div class="flex flex-col items-center">
+                        <span class="text-[9px] text-gray-500 font-bold">&nbsp;</span>
+                        <button onclick="pressKey('ON')" class="calc-btn w-12 h-8 bg-zinc-600 text-white rounded-md text-[11px] font-bold shadow-[0_3px_0_#27272a,0_4px_6px_rgba(0,0,0,0.4)] border-t border-zinc-500/30 hover:bg-zinc-500">ON</button>
+                    </div>
+                </div>
+
+                <!-- ROW 2: Variables & Calculus (x^-1, √, x^2, x^y, log, ln) -->
+                <div class="grid grid-cols-6 gap-1.5 mt-2">
+                    <!-- x^-1 -->
+                    <div class="flex flex-col items-center">
+                        <span class="legend-shift">x!</span>
+                        <button onclick="pressKey('x^-1')" class="calc-btn w-full py-1 bg-[#373a40] text-gray-200 rounded-md text-[12px] font-bold shadow-[0_2px_0_#1e2022,0_3px_5px_rgba(0,0,0,0.4)] border-t border-zinc-600/30">x⁻¹</button>
+                    </div>
+                    <!-- √ -->
+                    <div class="flex flex-col items-center">
+                        <span class="legend-shift">∛</span>
+                        <button onclick="pressKey('sqrt')" class="calc-btn w-full py-1 bg-[#373a40] text-gray-200 rounded-md text-[12px] font-bold shadow-[0_2px_0_#1e2022,0_3px_5px_rgba(0,0,0,0.4)] border-t border-zinc-600/30">√</button>
+                    </div>
+                    <!-- x^2 -->
+                    <div class="flex flex-col items-center">
+                        <span class="legend-shift">x³</span>
+                        <button onclick="pressKey('x^2')" class="calc-btn w-full py-1 bg-[#373a40] text-gray-200 rounded-md text-[12px] font-bold shadow-[0_2px_0_#1e2022,0_3px_5px_rgba(0,0,0,0.4)] border-t border-zinc-600/30">x²</button>
+                    </div>
+                    <!-- x^y -->
+                    <div class="flex flex-col items-center">
+                        <span class="legend-shift">ʸ√x</span>
+                        <button onclick="pressKey('pow')" class="calc-btn w-full py-1 bg-[#373a40] text-gray-200 rounded-md text-[12px] font-bold shadow-[0_2px_0_#1e2022,0_3px_5px_rgba(0,0,0,0.4)] border-t border-zinc-600/30">xʸ</button>
+                    </div>
+                    <!-- log -->
+                    <div class="flex flex-col items-center">
+                        <span class="legend-shift">10ˣ</span>
+                        <button onclick="pressKey('log')" class="calc-btn w-full py-1 bg-[#373a40] text-gray-200 rounded-md text-[11px] font-bold shadow-[0_2px_0_#1e2022,0_3px_5px_rgba(0,0,0,0.4)] border-t border-zinc-600/30">log</button>
+                    </div>
+                    <!-- ln -->
+                    <div class="flex flex-col items-center">
+                        <span class="legend-shift">eˣ</span>
+                        <button onclick="pressKey('ln')" class="calc-btn w-full py-1 bg-[#373a40] text-gray-200 rounded-md text-[11px] font-bold shadow-[0_2px_0_#1e2022,0_3px_5px_rgba(0,0,0,0.4)] border-t border-zinc-600/30">ln</button>
+                    </div>
+                </div>
+
+                <!-- ROW 3: Secondary Operations (Fraction, Deg/Min/Sec, Abs, Trigonometry) -->
+                <div class="grid grid-cols-6 gap-1.5">
+                    <!-- Fraction -->
+                    <div class="flex flex-col items-center">
+                        <span class="legend-shift">a b/c</span>
+                        <button onclick="pressKey('fraction')" class="calc-btn w-full py-1 bg-[#373a40] text-gray-200 rounded-md text-[12px] font-bold shadow-[0_2px_0_#1e2022,0_3px_5px_rgba(0,0,0,0.4)] border-t border-zinc-600/30">𝌆</button>
+                    </div>
+                    <!-- Degrees/Minutes/Seconds -->
+                    <div class="flex flex-col items-center">
+                        <span class="legend-shift">←</span>
+                        <button onclick="pressKey('deg')" class="calc-btn w-full py-1 bg-[#373a40] text-gray-200 rounded-md text-[12px] font-bold shadow-[0_2px_0_#1e2022,0_3px_5px_rgba(0,0,0,0.4)] border-t border-zinc-600/30">° ' "</button>
+                    </div>
+                    <!-- Abs -->
+                    <div class="flex flex-col items-center">
+                        <span class="legend-shift">Ran#</span>
+                        <button onclick="pressKey('abs')" class="calc-btn w-full py-1 bg-[#373a40] text-gray-200 rounded-md text-[12px] font-bold shadow-[0_2px_0_#1e2022,0_3px_5px_rgba(0,0,0,0.4)] border-t border-zinc-600/30">Abs</button>
+                    </div>
+                    <!-- sin -->
+                    <div class="flex flex-col items-center">
+                        <span id="shiftSin" class="legend-shift">sin⁻¹</span>
+                        <button onclick="pressKey('sin')" class="calc-btn w-full py-1 bg-[#373a40] text-gray-200 rounded-md text-[11px] font-bold shadow-[0_2px_0_#1e2022,0_3px_5px_rgba(0,0,0,0.4)] border-t border-zinc-600/30">sin</button>
+                    </div>
+                    <!-- cos -->
+                    <div class="flex flex-col items-center">
+                        <span id="shiftCos" class="legend-shift">cos⁻¹</span>
+                        <button onclick="pressKey('cos')" class="calc-btn w-full py-1 bg-[#373a40] text-gray-200 rounded-md text-[11px] font-bold shadow-[0_2px_0_#1e2022,0_3px_5px_rgba(0,0,0,0.4)] border-t border-zinc-600/30">cos</button>
+                    </div>
+                    <!-- tan -->
+                    <div class="flex flex-col items-center">
+                        <span id="shiftTan" class="legend-shift">tan⁻¹</span>
+                        <button onclick="pressKey('tan')" class="calc-btn w-full py-1 bg-[#373a40] text-gray-200 rounded-md text-[11px] font-bold shadow-[0_2px_0_#1e2022,0_3px_5px_rgba(0,0,0,0.4)] border-t border-zinc-600/30">tan</button>
+                    </div>
+                </div>
+
+                <!-- ROW 4: Constants, Variables & Parentheses -->
+                <div class="grid grid-cols-6 gap-1.5">
+                    <!-- Variable STO -->
+                    <div class="flex flex-col items-center">
+                        <span class="legend-shift">RECALL</span>
+                        <button onclick="pressKey('STO')" class="calc-btn w-full py-1 bg-[#373a40] text-gray-200 rounded-md text-[11px] font-bold shadow-[0_2px_0_#1e2022,0_3px_5px_rgba(0,0,0,0.4)] border-t border-zinc-600/30">STO</button>
+                    </div>
+                    <!-- ENG -->
+                    <div class="flex flex-col items-center">
+                        <span class="legend-shift">←</span>
+                        <button onclick="pressKey('ENG')" class="calc-btn w-full py-1 bg-[#373a40] text-gray-200 rounded-md text-[11px] font-bold shadow-[0_2px_0_#1e2022,0_3px_5px_rgba(0,0,0,0.4)] border-t border-zinc-600/30">ENG</button>
+                    </div>
+                    <!-- ( -->
+                    <div class="flex flex-col items-center">
+                        <span class="legend-alpha">X</span>
+                        <button onclick="pressKey('(')" class="calc-btn w-full py-1 bg-[#373a40] text-gray-200 rounded-md text-[12px] font-bold shadow-[0_2px_0_#1e2022,0_3px_5px_rgba(0,0,0,0.4)] border-t border-zinc-600/30">(</button>
+                    </div>
+                    <!-- ) -->
+                    <div class="flex flex-col items-center">
+                        <span class="legend-alpha">Y</span>
+                        <button onclick="pressKey(')')" class="calc-btn w-full py-1 bg-[#373a40] text-gray-200 rounded-md text-[12px] font-bold shadow-[0_2px_0_#1e2022,0_3px_5px_rgba(0,0,0,0.4)] border-t border-zinc-600/30">)</button>
+                    </div>
+                    <!-- S<=>D (Standard to Decimal) -->
+                    <div class="flex flex-col items-center">
+                        <span class="legend-shift">a b/c</span>
+                        <button onclick="pressKey('SD')" class="calc-btn w-full py-1 bg-[#373a40] text-gray-200 rounded-md text-[11px] font-bold shadow-[0_2px_0_#1e2022,0_3px_5px_rgba(0,0,0,0.4)] border-t border-zinc-600/30">S⇔D</button>
+                    </div>
+                    <!-- M+ (Memory Addition) -->
+                    <div class="flex flex-col items-center">
+                        <span class="legend-shift">M-</span>
+                        <button onclick="pressKey('M+')" class="calc-btn w-full py-1 bg-[#373a40] text-gray-200 rounded-md text-[11px] font-bold shadow-[0_2px_0_#1e2022,0_3px_5px_rgba(0,0,0,0.4)] border-t border-zinc-600/30">M+</button>
+                    </div>
+                </div>
+
+                <!-- PRIMARY NUMERIC KEYPAD WITH ARITHMETIC (7, 8, 9, DEL, AC, etc.) -->
+                <div class="grid grid-cols-5 gap-2 mt-4">
+                    <!-- Row 1: 7, 8, 9, DEL, AC -->
+                    <button onclick="pressKey('7')" class="calc-btn py-3 bg-zinc-200 text-zinc-900 rounded-lg text-xl font-bold shadow-[0_3px_0_#a1a1aa,0_4px_6px_rgba(0,0,0,0.3)] border-t border-white hover:bg-zinc-100">7</button>
+                    <button onclick="pressKey('8')" class="calc-btn py-3 bg-zinc-200 text-zinc-900 rounded-lg text-xl font-bold shadow-[0_3px_0_#a1a1aa,0_4px_6px_rgba(0,0,0,0.3)] border-t border-white hover:bg-zinc-100">8</button>
+                    <button onclick="pressKey('9')" class="calc-btn py-3 bg-zinc-200 text-zinc-900 rounded-lg text-xl font-bold shadow-[0_3px_0_#a1a1aa,0_4px_6px_rgba(0,0,0,0.3)] border-t border-white hover:bg-zinc-100">9</button>
+                    
+                    <!-- DEL Key (Orange alert style) -->
+                    <button onclick="pressKey('DEL')" class="calc-btn py-3 bg-[#be5a38] text-white rounded-lg text-sm font-bold shadow-[0_3px_0_#803118,0_4px_6px_rgba(0,0,0,0.3)] border-t border-orange-400/30 hover:bg-[#cf6642]">DEL</button>
+                    <!-- AC Key -->
+                    <button onclick="pressKey('AC')" class="calc-btn py-3 bg-[#be5a38] text-white rounded-lg text-sm font-bold shadow-[0_3px_0_#803118,0_4px_6px_rgba(0,0,0,0.3)] border-t border-orange-400/30 hover:bg-[#cf6642]">AC</button>
+
+                    <!-- Row 2: 4, 5, 6, *, / -->
+                    <button onclick="pressKey('4')" class="calc-btn py-3 bg-zinc-200 text-zinc-900 rounded-lg text-xl font-bold shadow-[0_3px_0_#a1a1aa,0_4px_6px_rgba(0,0,0,0.3)] border-t border-white hover:bg-zinc-100">4</button>
+                    <button onclick="pressKey('5')" class="calc-btn py-3 bg-zinc-200 text-zinc-900 rounded-lg text-xl font-bold shadow-[0_3px_0_#a1a1aa,0_4px_6px_rgba(0,0,0,0.3)] border-t border-white hover:bg-zinc-100">5</button>
+                    <button onclick="pressKey('6')" class="calc-btn py-3 bg-zinc-200 text-zinc-900 rounded-lg text-xl font-bold shadow-[0_3px_0_#a1a1aa,0_4px_6px_rgba(0,0,0,0.3)] border-t border-white hover:bg-zinc-100">6</button>
+                    <button onclick="pressKey('*')" class="calc-btn py-3 bg-[#3f434a] text-white rounded-lg text-xl font-semibold shadow-[0_3px_0_#27292d,0_4px_6px_rgba(0,0,0,0.3)] border-t border-zinc-600/30 hover:bg-[#4d515a]"><i class="fa-solid fa-xmark text-sm"></i></button>
+                    <button onclick="pressKey('/')" class="calc-btn py-3 bg-[#3f434a] text-white rounded-lg text-xl font-semibold shadow-[0_3px_0_#27292d,0_4px_6px_rgba(0,0,0,0.3)] border-t border-zinc-600/30 hover:bg-[#4d515a]"><i class="fa-solid fa-divide text-sm"></i></button>
+
+                    <!-- Row 3: 1, 2, 3, +, - -->
+                    <button onclick="pressKey('1')" class="calc-btn py-3 bg-zinc-200 text-zinc-900 rounded-lg text-xl font-bold shadow-[0_3px_0_#a1a1aa,0_4px_6px_rgba(0,0,0,0.3)] border-t border-white hover:bg-zinc-100">1</button>
+                    <button onclick="pressKey('2')" class="calc-btn py-3 bg-zinc-200 text-zinc-900 rounded-lg text-xl font-bold shadow-[0_3px_0_#a1a1aa,0_4px_6px_rgba(0,0,0,0.3)] border-t border-white hover:bg-zinc-100">2</button>
+                    <button onclick="pressKey('3')" class="calc-btn py-3 bg-zinc-200 text-zinc-900 rounded-lg text-xl font-bold shadow-[0_3px_0_#a1a1aa,0_4px_6px_rgba(0,0,0,0.3)] border-t border-white hover:bg-zinc-100">3</button>
+                    <button onclick="pressKey('+')" class="calc-btn py-3 bg-[#3f434a] text-white rounded-lg text-xl font-semibold shadow-[0_3px_0_#27292d,0_4px_6px_rgba(0,0,0,0.3)] border-t border-zinc-600/30 hover:bg-[#4d515a]"><i class="fa-solid fa-plus text-sm"></i></button>
+                    <button onclick="pressKey('-')" class="calc-btn py-3 bg-[#3f434a] text-white rounded-lg text-xl font-semibold shadow-[0_3px_0_#27292d,0_4px_6px_rgba(0,0,0,0.3)] border-t border-zinc-600/30 hover:bg-[#4d515a]"><i class="fa-solid fa-minus text-sm"></i></button>
+
+                    <!-- Row 4: 0, ., *10^x, Ans, = -->
+                    <button onclick="pressKey('0')" class="calc-btn py-3 bg-zinc-200 text-zinc-900 rounded-lg text-xl font-bold shadow-[0_3px_0_#a1a1aa,0_4px_6px_rgba(0,0,0,0.3)] border-t border-white hover:bg-zinc-100">0</button>
+                    <button onclick="pressKey('.')" class="calc-btn py-3 bg-zinc-200 text-zinc-900 rounded-lg text-xl font-bold shadow-[0_3px_0_#a1a1aa,0_4px_6px_rgba(0,0,0,0.3)] border-t border-white hover:bg-zinc-100">.</button>
+                    <!-- x10^x / Exp -->
+                    <button onclick="pressKey('exp')" class="calc-btn py-3 bg-[#3f434a] text-white rounded-lg text-xs font-bold shadow-[0_3px_0_#27292d,0_4px_6px_rgba(0,0,0,0.3)] border-t border-zinc-600/30 hover:bg-[#4d515a]">×10ˣ</button>
+                    <!-- Ans -->
+                    <button onclick="pressKey('Ans')" class="calc-btn py-3 bg-[#3f434a] text-white rounded-lg text-sm font-semibold shadow-[0_3px_0_#27292d,0_4px_6px_rgba(0,0,0,0.3)] border-t border-zinc-600/30 hover:bg-[#4d515a]">Ans</button>
+                    <!-- EXE / Equals -->
+                    <button onclick="pressKey('=')" class="calc-btn py-3 bg-stone-300 text-stone-900 rounded-lg text-xl font-extrabold shadow-[0_3px_0_#9a9895,0_4px_6px_rgba(0,0,0,0.3)] border-t border-white hover:bg-stone-200"><i class="fa-solid fa-equals text-sm"></i></button>
+                </div>
+            </div>
+            
+            <!-- Safe indicator label -->
+            <div class="mt-4 text-center">
+                <span class="text-[9px] text-gray-500 tracking-[0.2em] font-semibold uppercase">Casio Web Simulation Workspace</span>
+            </div>
+        </div>
+
+        <!-- CALCULATION HISTORY & REFERENCE MANUAL SIDEBAR -->
+        <div class="w-full max-w-[420px] md:max-w-[280px] bg-slate-900/80 backdrop-blur-md rounded-3xl p-5 border border-slate-800 text-gray-300 flex flex-col justify-between shadow-2xl">
+            <div>
+                <h3 class="text-md font-bold text-white mb-3 flex items-center gap-2 border-b border-slate-800 pb-2">
+                    <i class="fa-solid fa-history text-amber-500"></i>
+                    <span>연산 히스토리 (History)</span>
+                </h3>
+                <!-- History Feed List -->
+                <div id="historyList" class="space-y-2 max-h-[220px] md:max-h-[340px] overflow-y-auto pr-1 text-sm font-mono">
+                    <div class="text-gray-500 italic text-xs py-2">아직 기록된 연산이 없습니다.</div>
+                </div>
+            </div>
+
+            <!-- Scientific Variables & Guide Panel -->
+            <div class="mt-4 pt-3 border-t border-slate-800 text-[11px] text-gray-400">
+                <h4 class="font-bold text-white mb-1.5"><i class="fa-solid fa-circle-info text-sky-500"></i> 기기 조작 안내</h4>
+                <ul class="space-y-1 list-disc pl-3">
+                    <li><strong class="text-amber-500">SHIFT</strong> 버튼 클릭 시 황색 상단 서브 기능 사용 가능</li>
+                    <li><strong class="text-pink-500">ALPHA</strong> 버튼 클릭 후 변수값 응용 가능</li>
+                    <li><strong class="text-sky-400">S⇔D</strong> 분수 형태를 소수로 교차 표기</li>
+                    <li><strong class="text-emerald-400">STO</strong> 계산 결과를 변수 메모리(M)에 보존</li>
+                </ul>
+                <div class="mt-3 p-2 bg-slate-800/50 rounded flex justify-between items-center">
+                    <span>메모리 저장 값 (M):</span>
+                    <span id="memValue" class="font-mono text-emerald-400 font-bold">0</span>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- Audio assets using Web Audio API to prevent resource loading issues -->
+    <script>
+        let isSoundEnabled = true;
+        let isBacklightOn = false;
+        
+        // Audio synthesis function for authentic tactile keypad sound clicks
+        function playClickSound(freq = 1200, duration = 0.015) {
+            if (!isSoundEnabled) return;
+            try {
+                const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                const oscillator = audioCtx.createOscillator();
+                const gainNode = audioCtx.createGain();
+                
+                oscillator.type = 'sine';
+                oscillator.frequency.setValueAtTime(freq, audioCtx.currentTime);
+                
+                // Very short click envelope
+                gainNode.gain.setValueAtTime(0.2, audioCtx.currentTime);
+                gainNode.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + duration);
+                
+                oscillator.connect(gainNode);
+                gainNode.connect(audioCtx.destination);
+                
+                oscillator.start();
+                oscillator.stop(audioCtx.currentTime + duration);
+            } catch (e) {
+                console.warn("Audio context failed to start:", e);
+            }
+        }
+
+        function toggleSound() {
+            isSoundEnabled = !isSoundEnabled;
+            const icon = document.getElementById('soundIcon');
+            if (isSoundEnabled) {
+                icon.className = "fa-solid fa-volume-high text-[10px]";
+                playClickSound(1000, 0.05);
+            } else {
+                icon.className = "fa-solid fa-volume-xmark text-[10px]";
+            }
+        }
+
+        function toggleBacklight() {
+            isBacklightOn = !isBacklightOn;
+            const lcd = document.getElementById('lcdScreen');
+            if (isBacklightOn) {
+                lcd.classList.add('backlight-on');
+                playClickSound(1800, 0.03);
+            } else {
+                lcd.classList.remove('backlight-on');
+                playClickSound(1400, 0.03);
+            }
+        }
+    </script>
+
+    <!-- Core Calculation & Display Logic Engine -->
+    <script>
+        // Internal calculator state variables
+        let inputExpression = "";
+        let cursorPosition = 0;
+        let lastAnswer = 0;
+        let savedMemory = 0;
+        let history = [];
+        let isShiftActive = false;
+        let isAlphaActive = false;
+        let angleMode = "DEG"; // DEG, RAD, GRAD
+
+        // Element refs
+        const inputEl = document.getElementById('lcdInput');
+        const outputEl = document.getElementById('lcdOutput');
+        const cursorEl = document.getElementById('cursor');
+        const indShift = document.getElementById('indicatorShift');
+        const indAlpha = document.getElementById('indicatorAlpha');
+        const indM = document.getElementById('indicatorM');
+        const indAngle = document.getElementById('indicatorAngle');
+        const memValueEl = document.getElementById('memValue');
+        const historyListEl = document.getElementById('historyList');
+
+        // Render input expression with proper formatting for screen
+        function updateDisplay() {
+            if (inputExpression === "") {
+                inputEl.textContent = "0";
+                cursorEl.style.marginLeft = "0";
+            } else {
+                // Replace internal math symbols with user-friendly textbook symbols
+                let displayStr = inputExpression
+                    .replace(/\*/g, '×')
+                    .replace(/\//g, '÷')
+                    .replace(/pi/g, 'π')
+                    .replace(/sqrt\(/g, '√(')
+                    .replace(/deg/g, '°');
+                inputEl.textContent = displayStr;
+            }
+            
+            // Handle Shift / Alpha indicators light
+            indShift.style.opacity = isShiftActive ? "1" : "0.1";
+            indAlpha.style.opacity = isAlphaActive ? "1" : "0.1";
+            indM.style.opacity = savedMemory !== 0 ? "1" : "0.1";
+            indAngle.textContent = angleMode;
+            memValueEl.textContent = savedMemory;
+        }
+
+        // Move active cursor inside input text line
+        function moveCursor(direction) {
+            playClickSound(800, 0.02);
+            // Simulated cursor behavior for aesthetics
+            if (direction === 'LEFT') {
+                // Just aesthetic tick
+            } else if (direction === 'RIGHT') {
+                // Just aesthetic tick
+            }
+        }
+
+        // Handle button operations
+        function pressKey(key) {
+            playClickSound(1200, 0.015);
+
+            // Handle special SHIFT/ALPHA toggles
+            if (key === 'SHIFT') {
+                isShiftActive = !isShiftActive;
+                isAlphaActive = false;
+                updateDisplay();
+                return;
+            }
+            if (key === 'ALPHA') {
+                isAlphaActive = !isAlphaActive;
+                isShiftActive = false;
+                updateDisplay();
+                return;
+            }
+
+            // Normal operation execution path
+            switch(key) {
+                case 'AC':
+                    inputExpression = "";
+                    outputEl.textContent = "0";
+                    isShiftActive = false;
+                    isAlphaActive = false;
+                    break;
+                
+                case 'DEL':
+                    if (inputExpression.length > 0) {
+                        // Check if we are deleting functions like "sin(" or "log(" to delete clean
+                        if (inputExpression.endsWith('sin(') || inputExpression.endsWith('cos(') || inputExpression.endsWith('tan(') || inputExpression.endsWith('log(')) {
+                            inputExpression = inputExpression.slice(0, -4);
+                        } else if (inputExpression.endsWith('sqrt(')) {
+                            inputExpression = inputExpression.slice(0, -5);
+                        } else if (inputExpression.endsWith('pi')) {
+                            inputExpression = inputExpression.slice(0, -2);
+                        } else {
+                            inputExpression = inputExpression.slice(0, -1);
+                        }
+                    }
+                    break;
+
+                case 'ON':
+                    inputExpression = "";
+                    outputEl.textContent = "0";
+                    isShiftActive = false;
+                    isAlphaActive = false;
+                    saveLog("System Rebooted");
+                    break;
+
+                case '=':
+                    evaluateExpression();
+                    break;
+
+                case 'Ans':
+                    inputExpression += "Ans";
+                    break;
+
+                // MATH KEYPAD ROUTING
+                case 'sin':
+                    if (isShiftActive) {
+                        inputExpression += "asin(";
+                        isShiftActive = false;
+                    } else {
+                        inputExpression += "sin(";
+                    }
+                    break;
+                case 'cos':
+                    if (isShiftActive) {
+                        inputExpression += "acos(";
+                        isShiftActive = false;
+                    } else {
+                        inputExpression += "cos(";
+                    }
+                    break;
+                case 'tan':
+                    if (isShiftActive) {
+                        inputExpression += "atan(";
+                        isShiftActive = false;
+                    } else {
+                        inputExpression += "tan(";
+                    }
+                    break;
+                case 'sqrt':
+                    if (isShiftActive) {
+                        // Cube root fallback
+                        inputExpression += "cbrt(";
+                        isShiftActive = false;
+                    } else {
+                        inputExpression += "sqrt(";
+                    }
+                    break;
+                case 'x^2':
+                    if (isShiftActive) {
+                        inputExpression += "^3";
+                        isShiftActive = false;
+                    } else {
+                        inputExpression += "^2";
+                    }
+                    break;
+                case 'pow':
+                    inputExpression += "^";
+                    break;
+                case 'log':
+                    inputExpression += "log10(";
+                    break;
+                case 'ln':
+                    inputExpression += "log(";
+                    break;
+                case 'x^-1':
+                    if (isShiftActive) {
+                        inputExpression += "!";
+                        isShiftActive = false;
+                    } else {
+                        inputExpression += "^(-1)";
+                    }
+                    break;
+                case 'fraction':
+                    inputExpression += "/";
+                    break;
+                case 'deg':
+                    inputExpression += "deg";
+                    break;
+                case 'abs':
+                    inputExpression += "abs(";
+                    break;
+
+                // Variable store & recall
+                case 'STO':
+                    if (outputEl.textContent !== "0" && outputEl.textContent !== "Error") {
+                        savedMemory = parseFloat(outputEl.textContent) || 0;
+                        saveLog(`M = ${savedMemory}`);
+                        playClickSound(2000, 0.05);
+                    }
+                    break;
+                case 'M+':
+                    if (outputEl.textContent !== "0" && outputEl.textContent !== "Error") {
+                        savedMemory += parseFloat(outputEl.textContent) || 0;
+                        saveLog(`M+ added`);
+                    }
+                    break;
+
+                // Constant Pi/e shortcuts via Shift
+                case 'exp':
+                    if (isShiftActive) {
+                        inputExpression += "e";
+                        isShiftActive = false;
+                    } else {
+                        inputExpression += "*10^";
+                    }
+                    break;
+
+                case 'SD': // S <=> D standard fraction approximation converter
+                    toggleFractionDecimal();
+                    break;
+
+                case 'MENU':
+                    // Interactive cycle angle modes: DEG -> RAD -> GRAD
+                    if (angleMode === "DEG") angleMode = "RAD";
+                    else if (angleMode === "RAD") angleMode = "GRAD";
+                    else angleMode = "DEG";
+                    break;
+
+                default:
+                    // Fallback to normal key injection
+                    if (isShiftActive && key === '0') {
+                        inputExpression += "pi";
+                        isShiftActive = false;
+                    } else {
+                        inputExpression += key;
+                    }
+                    break;
+            }
+
+            // Standard status reset
+            if (key !== 'SHIFT' && key !== 'ALPHA') {
+                isShiftActive = false;
+                isAlphaActive = false;
+            }
+
+            updateDisplay();
+        }
+
+        // Toggle Standard Fraction view vs Decimal approximation
+        function toggleFractionDecimal() {
+            let val = parseFloat(outputEl.textContent);
+            if (!isNaN(val)) {
+                if (outputEl.textContent.includes('.')) {
+                    // Try converting to fraction
+                    try {
+                        let frac = math.fraction(val);
+                        if (frac.d !== 1) {
+                            outputEl.textContent = `${frac.n}/${frac.d}`;
+                        }
+                    } catch(e) {}
+                } else if (outputEl.textContent.includes('/')) {
+                    // Convert back to floating decimal
+                    try {
+                        let evaluated = math.evaluate(outputEl.textContent);
+                        outputEl.textContent = evaluated.toFixed(6).replace(/\.?0+$/, "");
+                    } catch(e) {}
+                } else {
+                    // Default layout convert simulation
+                    outputEl.textContent = val.toFixed(1);
+                }
+            }
+        }
+
+        // Main Calculation Evaluator
+        function evaluateExpression() {
+            if (inputExpression.trim() === "") return;
+
+            let parsingExpr = inputExpression;
+
+            // Prepare custom replacements so math.js can analyze safely
+            parsingExpr = parsingExpr.replace(/Ans/g, `(${lastAnswer})`);
+            
+            // Degrees calculation configuration modifier
+            if (angleMode === "DEG") {
+                // Inject degrees inside basic trigs
+                parsingExpr = parsingExpr.replace(/sin\(([^)]+)\)/g, 'sin($1 deg)');
+                parsingExpr = parsingExpr.replace(/cos\(([^)]+)\)/g, 'cos($1 deg)');
+                parsingExpr = parsingExpr.replace(/tan\(([^)]+)\)/g, 'tan($1 deg)');
+            }
+
+            try {
+                // Parse and compile using Math.js
+                let result = math.evaluate(parsingExpr);
+                
+                // Format output cleanly
+                if (typeof result === 'number') {
+                    // Avoid javascript floating point precision artifacts (like 0.1 + 0.2)
+                    result = parseFloat(result.toFixed(12));
+                    outputEl.textContent = result;
+                    lastAnswer = result;
+                    addHistory(inputExpression, result);
+                } else if (typeof result === 'object' && result.isFraction) {
+                    outputEl.textContent = `${result.n}/${result.d}`;
+                    lastAnswer = math.number(result);
+                    addHistory(inputExpression, outputEl.textContent);
+                } else {
+                    outputEl.textContent = result.toString();
+                    addHistory(inputExpression, result.toString());
+                }
+            } catch (error) {
+                outputEl.textContent = "Error";
+                playClickSound(400, 0.15); // Low alert error chime
+            }
+        }
+
+        // Add item to history tracking lists
+        function addHistory(expr, result) {
+            let styledExpr = expr
+                .replace(/\*/g, '×')
+                .replace(/\//g, '÷')
+                .replace(/pi/g, 'π');
+                
+            history.unshift({ expr: styledExpr, result: result });
+            if (history.length > 30) history.pop(); // Keep limit of 30 recent items
+            renderHistory();
+        }
+
+        function saveLog(msg) {
+            history.unshift({ expr: "SYSTEM", result: msg });
+            renderHistory();
+        }
+
+        function renderHistory() {
+            historyListEl.innerHTML = "";
+            if (history.length === 0) {
+                historyListEl.innerHTML = `<div class="text-gray-500 italic text-xs py-2">아직 기록된 연산이 없습니다.</div>`;
+                return;
+            }
+
+            history.forEach((item, index) => {
+                const div = document.createElement('div');
+                div.className = "bg-slate-800/40 p-2 rounded border border-slate-700/50 hover:bg-slate-800 transition cursor-pointer";
+                div.onclick = () => {
+                    if (item.expr !== "SYSTEM") {
+                        inputExpression = item.expr.replace(/×/g, '*').replace(/÷/g, '/').replace(/π/g, 'pi');
+                        outputEl.textContent = item.result;
+                        updateDisplay();
+                        playClickSound(1000, 0.02);
+                    }
+                };
+                
+                if (item.expr === "SYSTEM") {
+                    div.innerHTML = `
+                        <div class="text-[10px] text-amber-500 font-bold tracking-wider">[SYS]</div>
+                        <div class="text-xs text-gray-400">${item.result}</div>
+                    `;
+                } else {
+                    div.innerHTML = `
+                        <div class="text-[10px] text-gray-500 text-right">#${history.length - index}</div>
+                        <div class="text-xs text-gray-400 truncate">${item.expr}</div>
+                        <div class="text-sm font-bold text-white text-right mt-0.5">${item.result}</div>
+                    `;
+                }
+                historyListEl.appendChild(div);
+            });
+        }
+
+        function clearHistory() {
+            history = [];
+            renderHistory();
+            playClickSound(600, 0.05);
+        }
+
+        // Attach physical keyboard listeners for native calculator inputs
+        document.addEventListener('keydown', function(event) {
+            const key = event.key;
+            if (key >= '0' && key <= '9') pressKey(key);
+            else if (key === '.') pressKey('.');
+            else if (key === '+') pressKey('+');
+            else if (key === '-') pressKey('-');
+            else if (key === '*') pressKey('*');
+            else if (key === '/') pressKey('/');
+            else if (key === 'Enter' || key === '=') pressKey('=');
+            else if (key === 'Backspace') pressKey('DEL');
+            else if (key === 'Escape') pressKey('AC');
+        });
+
+        // Initial setup
+        updateDisplay();
+    </script>
+
+</body>
+</html>
+
+```
